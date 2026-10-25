@@ -6,3 +6,4 @@
 *.bak
 *.log
 node_modules/
+/verify/*.json
