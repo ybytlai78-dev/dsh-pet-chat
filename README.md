@@ -2,7 +2,7 @@
 
 > 点一下桌面上的鲸鱼娘，打字问它。它会自己看你此刻的屏幕，把「问题 + 一帧截图」送进你正在用的 dsh 会话，再把答案吐回那张小卡片。
 
-Windows · PowerShell 5.1 · 需要 [dsh 桌面端](https://github.com/deepseek-ai) 与官方桌宠 `dsh-tauri-pet` · MIT
+Windows · PowerShell 5.1 · 需要 dsh 桌面端与官方桌宠 `dsh-tauri-pet` · MIT
 
 ![卡片](docs/card.png)
 
