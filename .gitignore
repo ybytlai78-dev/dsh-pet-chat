@@ -1,0 +1,8 @@
+# 开发期产物，不进仓库
+/tools/
+/shots/
+/verify/shots/
+/design-demos/shots/
+*.bak
+*.log
+node_modules/

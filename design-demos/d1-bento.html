@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DSH 桌宠问答卡 · Bento 分区</title>
+<style>
+:root {
+  --color-canvas: #8f9bb0;
+  --color-canvas-ink: #182232;
+  --color-canvas-soft: #223044;
+  --color-canvas-line: #6f7f96;
+  --color-surface: #ffffff;
+  --color-surface-soft: #f2f7fd;
+  --color-surface-tint: #eaf2fe;
+  --color-surface-hover: #e1ecfa;
+  --color-line: #d3e0ee;
+  --color-line-strong: #a9bfd7;
+  --color-ink: #172133;
+  --color-ink-soft: #4b5c72;
+  --color-ink-muted: #5d6d81;
+  --color-accent: #2f5fe0;
+  --color-accent-strong: #244fca;
+  --color-accent-soft: #dfeaff;
+  --color-on-accent: #ffffff;
+  --color-success: #2f815f;
+  --color-danger: #9e3b32;
+  --color-danger-soft: #fcf2f0;
+  --color-rail-track: #dce8f8;
+  --color-rail-thumb: #7ca9e6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--color-canvas);
+}
+
+body {
+  min-width: 1364px;
+  margin: 0;
+  padding: 56px 32px 96px;
+  background: var(--color-canvas);
+  color: var(--color-canvas-ink);
+  font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-accent-soft);
+  color: var(--color-ink);
+}
+
+.board {
+  width: 1300px;
+  margin: 0 auto;
+}
+
+.board-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+  margin: 0 0 54px;
+  padding: 0 0 20px;
+  border-bottom: 1px solid var(--color-canvas-line);
+}
+
+.kicker {
+  margin: 0 0 10px;
+  color: var(--color-canvas-soft);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.14em;
+}
+
+.board-title {
+  margin: 0;
+  color: var(--color-canvas-ink);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+}
+
+.board-note {
+  margin: 0;
+  color: var(--color-canvas-ink);
+  font-size: 12px;
+  line-height: 1.7;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.spec {
+  margin: 0 0 64px;
+}
+
+.spec:last-child {
+  margin-bottom: 0;
+}
+
+.spec-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 0 20px;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--color-canvas-line);
+}
+
+.spec-title {
+  color: var(--color-canvas-ink);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.05em;
+}
+
+.spec-meta {
+  color: var(--color-canvas-soft);
+  font-size: 12px;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+}
+
+.spec-normal {
+  width: 420px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.spec-zoom {
+  width: 840px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.spec-states {
+  width: 1300px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  width: 420px;
+  height: 620px;
+  overflow: hidden;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+.zoom-frame {
+  width: 840px;
+  height: 1240px;
+}
+
+.zoom-card {
+  transform: scale(2);
+  transform-origin: 0 0;
+}
+
+.card-head {
+  display: flex;
+  flex: 0 0 46px;
+  align-items: stretch;
+  height: 46px;
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-surface-soft);
+}
+
+.head-label {
+  display: flex;
+  flex: 0 0 44px;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--color-line);
+  color: var(--color-ink-muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.08em;
+}
+
+.head-title {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  min-width: 0;
+  padding: 0 12px;
+  color: var(--color-ink);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.head-state {
+  display: flex;
+  flex: 0 0 34px;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid var(--color-line);
+}
+
+.state-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-success);
+}
+
+.head-button {
+  display: flex;
+  flex: 0 0 36px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--color-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-ink-soft);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.head-button:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-ink);
+}
+
+.head-button:focus-visible {
+  outline: 1px solid var(--color-accent);
+  outline-offset: -3px;
+}
+
+.card-main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--color-surface);
+}
+
+.ask {
+  display: flex;
+  flex: 0 0 100px;
+  flex-direction: column;
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-surface-tint);
+}
+
+.ask-head {
+  display: flex;
+  flex: 0 0 25px;
+  align-items: center;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-accent-strong);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.05em;
+}
+
+.ask-text {
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 10px 14px;
+  color: var(--color-ink);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.55;
+  text-wrap: pretty;
+  line-break: strict;
+  hanging-punctuation: allow-end;
+}
+
+.answer {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.answer-meta {
+  display: flex;
+  flex: 0 0 27px;
+  align-items: center;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-ink-muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.03em;
+}
+
+.answer-body {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: minmax(0, 1fr) 11px;
+  min-height: 0;
+}
+
+.answer-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 11px 12px 12px 14px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.answer-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.answer-text {
+  max-width: 62ch;
+}
+
+.answer-text p {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: 14.5px;
+  font-weight: 400;
+  line-height: 1.66;
+  text-wrap: pretty;
+  line-break: strict;
+  hanging-punctuation: allow-end;
+}
+
+.answer-text p + p {
+  margin-top: 6px;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.answer-text .evidence {
+  padding-left: 1.15em;
+  color: var(--color-ink-soft);
+  text-indent: -1.15em;
+}
+
+.answer-text .next-step {
+  margin-top: 9px;
+}
+
+.answer-rail {
+  position: relative;
+  border-left: 1px solid var(--color-line);
+  background: var(--color-surface);
+}
+
+.answer-rail::before {
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 4px;
+  width: 3px;
+  background: var(--color-rail-track);
+  content: "";
+}
+
+.rail-thumb {
+  position: absolute;
+  top: 10px;
+  left: 4px;
+  width: 3px;
+  height: 42%;
+  background: var(--color-rail-thumb);
+}
+
+.composer {
+  display: flex;
+  flex: 0 0 108px;
+  flex-direction: column;
+  border-top: 1px solid var(--color-line-strong);
+  background: var(--color-surface-soft);
+}
+
+.composer-head {
+  display: flex;
+  flex: 0 0 26px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-ink-muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+
+.composer-label {
+  font-weight: 500;
+}
+
+.composer-entry {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: flex-start;
+  padding: 12px 14px 10px;
+  color: var(--color-ink-muted);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.card-actions {
+  display: grid;
+  flex: 0 0 56px;
+  grid-template-columns: 34% 66%;
+  border-top: 1px solid var(--color-line-strong);
+}
+
+.action {
+  min-width: 0;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 0;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.action:focus-visible {
+  outline: 1px solid var(--color-accent);
+  outline-offset: -4px;
+}
+
+.action-secondary {
+  border-right: 1px solid var(--color-line-strong);
+  background: var(--color-surface-soft);
+  color: var(--color-ink-soft);
+  font-weight: 500;
+}
+
+.action-secondary:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-ink);
+}
+
+.action-primary {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: 600;
+}
+
+.action-primary:hover {
+  background: var(--color-accent-strong);
+}
+
+.states-row {
+  display: flex;
+  gap: 20px;
+}
+
+.mini {
+  display: flex;
+  flex-direction: column;
+  width: 420px;
+  height: 220px;
+  overflow: hidden;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+.mini-head {
+  display: flex;
+  flex: 0 0 38px;
+  align-items: stretch;
+  height: 38px;
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-surface-soft);
+}
+
+.mini-head .head-label {
+  flex-basis: 36px;
+}
+
+.mini-head .head-title {
+  padding: 0 11px;
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.mini-head .head-state {
+  flex-basis: 30px;
+}
+
+.mini-head .head-button {
+  flex-basis: 32px;
+  font-size: 15px;
+}
+
+.mini-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.empty-copy {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-ink);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.55;
+  text-wrap: pretty;
+  line-break: strict;
+  hanging-punctuation: allow-end;
+}
+
+.usage {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-rows: repeat(3, 1fr);
+  min-height: 0;
+}
+
+.usage-row {
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-ink-soft);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+}
+
+.usage-row:last-child {
+  border-bottom: 0;
+}
+
+.mini-meta {
+  display: flex;
+  flex: 0 0 26px;
+  align-items: center;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-ink-muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.03em;
+}
+
+.mini-question {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 8px 14px 9px;
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-ink);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  text-wrap: pretty;
+  line-break: strict;
+  hanging-punctuation: allow-end;
+}
+
+.thinking {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 9px;
+  min-height: 0;
+  padding: 11px 14px 12px;
+  background: var(--color-surface);
+}
+
+.thinking-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--color-accent-strong);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+}
+
+.thinking-glyph {
+  color: var(--color-accent);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+}
+
+.loading-lines {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 0;
+  padding: 4px 0 2px;
+}
+
+.loading-line {
+  display: block;
+  width: 100%;
+  height: 4px;
+  background: var(--color-accent-soft);
+}
+
+.loading-line:nth-child(1) {
+  width: 84%;
+}
+
+.loading-line:nth-child(2) {
+  width: 66%;
+}
+
+.loading-line:nth-child(3) {
+  width: 48%;
+}
+
+.mini-error .mini-head {
+  border-bottom: 1px solid var(--color-danger);
+}
+
+.mini-error .state-dot {
+  background: var(--color-danger);
+}
+
+.error-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 0;
+  padding: 18px 16px;
+  background: var(--color-danger-soft);
+}
+
+.error-lead {
+  margin: 0 0 8px;
+  color: var(--color-danger);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.55;
+  text-wrap: pretty;
+  line-break: strict;
+  hanging-punctuation: allow-end;
+}
+
+.error-copy {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.7;
+  text-wrap: pretty;
+  line-break: strict;
+  hanging-punctuation: allow-end;
+}
+</style>
+</head>
+<body>
+<main class="board">
+  <header class="board-head">
+    <div>
+      <p class="kicker">DSH 桌宠插件 · 视觉稿</p>
+      <h1 class="board-title">问答卡 / Bento 分区</h1>
+    </div>
+    <p class="board-note">420 × 620 基准 · 360–1080 自适应<br>纯色 · 1px 线 · 6px 圆角</p>
+  </header>
+
+  <section class="spec spec-normal">
+    <div class="spec-head">
+      <span class="spec-title">正常态</span>
+      <span class="spec-meta">420 × 620</span>
+    </div>
+
+    <article class="card" aria-label="DSH 桌宠问答卡正常态">
+      <header class="card-head">
+        <span class="head-label">会话</span>
+        <span class="head-title">DSH鲸鱼娘桌宠插件设计</span>
+        <span class="head-state" title="已连接"><span class="state-dot"></span></span>
+        <button class="head-button" type="button" aria-label="收起">—</button>
+        <button class="head-button" type="button" aria-label="关闭">×</button>
+      </header>
+
+      <div class="card-main">
+        <section class="ask" aria-label="我的提问">
+          <div class="ask-head">我的提问</div>
+          <p class="ask-text">这个 loss 曲线为什么会先降后升？是我 <span class="nowrap">batch size 太小吗？</span></p>
+        </section>
+
+        <section class="answer" aria-label="回答">
+          <div class="answer-meta">20:32 · 已看你的屏幕</div>
+          <div class="answer-body">
+            <div class="answer-scroll" tabindex="0">
+              <div class="answer-text">
+                <p>先给结论：后升的大概率不是 batch size，而是学习率没有随 warmup 结束回落。三个可以查的证据：</p>
+                <p class="evidence">· 你的曲线在第 6 个 epoch 抬升，正好是 warmup 结束的位置</p>
+                <p class="evidence">· 抬升前 loss 抖动幅度变大，符合 lr 偏高的典型特征</p>
+                <p class="evidence">· 验证集 loss 同步抬头，说明不是过拟合</p>
+                <p class="next-step">下一步：把 warmup_steps 从 500 调到 1500，或直接把峰值学习率降到 3e-4 再跑一次对照。</p>
+              </div>
+            </div>
+            <div class="answer-rail" aria-hidden="true">
+              <span class="rail-thumb"></span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <section class="composer" aria-label="输入区">
+        <div class="composer-head">
+          <span class="composer-label">输入</span>
+          <span>Enter 发送</span>
+        </div>
+        <div class="composer-entry">写点问题，我边看屏幕边答</div>
+      </section>
+
+      <div class="card-actions">
+        <button class="action action-secondary" type="button">只发屏幕</button>
+        <button class="action action-primary" type="button">看屏幕并提问</button>
+      </div>
+    </article>
+  </section>
+
+  <section class="spec spec-zoom">
+    <div class="spec-head">
+      <span class="spec-title">放大态</span>
+      <span class="spec-meta">200% · 420 × 620 原尺寸 @ 2×</span>
+    </div>
+    <div class="zoom-frame">
+      <article class="card zoom-card" aria-label="DSH 桌宠问答卡 200% 放大态">
+        <header class="card-head">
+          <span class="head-label">会话</span>
+          <span class="head-title">DSH鲸鱼娘桌宠插件设计</span>
+          <span class="head-state" title="已连接"><span class="state-dot"></span></span>
+          <button class="head-button" type="button" aria-label="收起">—</button>
+          <button class="head-button" type="button" aria-label="关闭">×</button>
+        </header>
+
+        <div class="card-main">
+          <section class="ask" aria-label="我的提问">
+            <div class="ask-head">我的提问</div>
+            <p class="ask-text">这个 loss 曲线为什么会先降后升？是我 <span class="nowrap">batch size 太小吗？</span></p>
+          </section>
+
+          <section class="answer" aria-label="回答">
+            <div class="answer-meta">20:32 · 已看你的屏幕</div>
+            <div class="answer-body">
+              <div class="answer-scroll" tabindex="0">
+                <div class="answer-text">
+                  <p>先给结论：后升的大概率不是 batch size，而是学习率没有随 warmup 结束回落。三个可以查的证据：</p>
+                  <p class="evidence">· 你的曲线在第 6 个 epoch 抬升，正好是 warmup 结束的位置</p>
+                  <p class="evidence">· 抬升前 loss 抖动幅度变大，符合 lr 偏高的典型特征</p>
+                  <p class="evidence">· 验证集 loss 同步抬头，说明不是过拟合</p>
+                  <p class="next-step">下一步：把 warmup_steps 从 500 调到 1500，或直接把峰值学习率降到 3e-4 再跑一次对照。</p>
+                </div>
+              </div>
+              <div class="answer-rail" aria-hidden="true">
+                <span class="rail-thumb"></span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <section class="composer" aria-label="输入区">
+          <div class="composer-head">
+            <span class="composer-label">输入</span>
+            <span>Enter 发送</span>
+          </div>
+          <div class="composer-entry">写点问题，我边看屏幕边答</div>
+        </section>
+
+        <div class="card-actions">
+          <button class="action action-secondary" type="button">只发屏幕</button>
+          <button class="action action-primary" type="button">看屏幕并提问</button>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="spec spec-states">
+    <div class="spec-head">
+      <span class="spec-title">状态小样</span>
+      <span class="spec-meta">空态 / 思考中 / 出错态 · 420 × 220 × 3</span>
+    </div>
+
+    <div class="states-row">
+      <article class="mini mini-empty" aria-label="空态">
+        <header class="mini-head card-head">
+          <span class="head-label">会话</span>
+          <span class="head-title">DSH鲸鱼娘桌宠插件设计</span>
+          <span class="head-state" title="已连接"><span class="state-dot"></span></span>
+          <button class="head-button" type="button" aria-label="收起">—</button>
+          <button class="head-button" type="button" aria-label="关闭">×</button>
+        </header>
+        <div class="mini-body">
+          <p class="empty-copy">点我提问。我会自己看你此刻的屏幕，把问题和一帧截图送进 dsh 当前会话。</p>
+          <div class="usage">
+            <div class="usage-row">Enter 发送</div>
+            <div class="usage-row">只发屏幕</div>
+            <div class="usage-row">点鲸鱼娘收起</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="mini mini-thinking" aria-label="思考中">
+        <header class="mini-head card-head">
+          <span class="head-label">会话</span>
+          <span class="head-title">DSH鲸鱼娘桌宠插件设计</span>
+          <span class="head-state" title="思考中"><span class="state-dot"></span></span>
+          <button class="head-button" type="button" aria-label="收起">—</button>
+          <button class="head-button" type="button" aria-label="关闭">×</button>
+        </header>
+        <div class="mini-body">
+          <div class="mini-meta">20:32 · 已看你的屏幕</div>
+          <p class="mini-question">这个 loss 曲线为什么会先降后升？是我 <span class="nowrap">batch size 太小吗？</span></p>
+          <div class="thinking">
+            <div class="thinking-head">
+              <span>思考中</span>
+              <span class="thinking-glyph">···</span>
+            </div>
+            <div class="loading-lines" aria-hidden="true">
+              <span class="loading-line"></span>
+              <span class="loading-line"></span>
+              <span class="loading-line"></span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="mini mini-error" aria-label="出错态">
+        <header class="mini-head card-head">
+          <span class="head-label">会话</span>
+          <span class="head-title">DSH鲸鱼娘桌宠插件设计</span>
+          <span class="head-state" title="连接失败"><span class="state-dot"></span></span>
+          <button class="head-button" type="button" aria-label="收起">—</button>
+          <button class="head-button" type="button" aria-label="关闭">×</button>
+        </header>
+        <div class="mini-body">
+          <div class="error-body">
+            <p class="error-lead">没连上 dsh：找不到 endpoint.json。</p>
+            <p class="error-copy">确认 dsh 正在运行，或重启卡片。</p>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+</main>
+</body>
+</html>

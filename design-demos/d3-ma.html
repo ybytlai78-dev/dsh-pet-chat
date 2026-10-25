@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>D3 / 原研哉 · 发丝线与留白</title>
+<style>
+:root{
+  /* 画布 */
+  --color-canvas:#8f9bb0;
+  --color-surface:#FFFFFF;
+  --color-card-line:#D5DFEC;
+
+  /* 墨色 */
+  --color-ink:#1C283A;        /* 正文 14–15px，约 14:1 */
+  --color-ink-soft:#63748A;   /* 辅助 12px，4.78:1 */
+  --color-mine:#183E8C;       /* 我的提问，9.9:1 */
+
+  /* 线 */
+  --color-line:#DCE4EE;       /* 发丝级 1px */
+  --color-line-strong:#C7D3E3;/* 顶栏底 / 输入区顶 */
+
+  /* 蓝：只出现在点、按钮、进度 */
+  --color-accent:#2360E8;
+  --color-accent-ink:#FFFFFF;
+  --color-rail:#F0F4FA;
+  --color-rail-thumb:#A9C2E4;
+  --color-alert:#8E4238;
+
+  /* 几何 */
+  --card-w:420px;
+  --card-h:620px;
+  --sm-h:220px;
+  --pad:26px;                 /* 唯一垂直基准线 */
+  --bar-h:46px;
+  --radius-card:8px;
+  --radius-ctl:8px;
+  --font:"Microsoft YaHei UI","Microsoft YaHei","PingFang SC",sans-serif;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{overflow-x:auto}
+body{
+  margin:0;
+  padding:0;
+  background:var(--color-canvas);
+  font-family:var(--font);
+  -webkit-font-smoothing:antialiased;
+  color:var(--color-ink);
+}
+
+/* ── 演示舞台 ───────────────────────────────────────── */
+.stage{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:88px;
+  padding:56px 40px 104px;
+  width:max-content;
+  min-width:100%;
+  margin:0 auto;
+}
+.stage__head{
+  align-self:flex-start;
+  margin:0;
+  font-size:12px;
+  letter-spacing:.10em;
+  color:var(--color-ink);
+}
+.demo{display:flex;flex-direction:column;gap:12px;margin:0}
+.demo__label{
+  margin:0;
+  font-size:12px;
+  letter-spacing:.08em;
+  color:var(--color-ink);
+}
+.zoom-demo{zoom:2}
+.states{display:flex;gap:20px}
+.state{margin:0;display:flex;flex-direction:column;gap:10px}
+.state__cap{margin:0;font-size:12px;letter-spacing:.06em;color:var(--color-ink)}
+
+/* ── 卡片 ───────────────────────────────────────────── */
+.card{
+  width:var(--card-w);
+  max-width:100%;
+  height:var(--card-h);
+  display:flex;
+  flex-direction:column;
+  background:var(--color-surface);
+  border:1px solid var(--color-card-line);
+  border-radius:var(--radius-card);
+  overflow:hidden;
+}
+.card--sm{height:var(--sm-h)}
+
+/* 顶栏 */
+.card__bar{
+  flex:0 0 var(--bar-h);
+  height:var(--bar-h);
+  display:flex;
+  align-items:center;
+  padding:0 14px 0 var(--pad);
+  border-bottom:1px solid var(--color-line-strong);
+}
+.card__title{
+  flex:1 1 auto;
+  min-width:0;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+  font-size:14px;
+  font-weight:400;
+  letter-spacing:.04em;
+  color:var(--color-ink);
+}
+.card__dot{
+  flex:0 0 auto;
+  width:6px;
+  height:6px;
+  margin:0 10px 0 0;
+  border-radius:50%;
+  background:var(--color-accent);
+}
+.card--err .card__dot{background:var(--color-alert)}
+.card__ctl{
+  flex:0 0 auto;
+  width:24px;
+  height:24px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  border:0;
+  background:none;
+  font-family:var(--font);
+  font-size:14px;
+  line-height:1;
+  color:var(--color-ink-soft);
+  cursor:default;
+}
+
+/* 对话流 */
+.stream{
+  flex:1 1 auto;
+  min-height:0;
+  position:relative;
+}
+.stream__body{
+  height:100%;
+  overflow-y:auto;
+  padding:var(--pad) var(--pad) 30px;
+}
+.mine{
+  margin:0 0 0 auto;
+  max-width:86%;
+  font-size:15px;
+  line-height:1.78;
+  letter-spacing:.015em;
+  text-align:right;
+  color:var(--color-mine);
+  text-wrap:pretty;
+  overflow-wrap:break-word;
+}
+/* 换气符：24px 发丝短线，与回答左边界同线 */
+.breath{
+  width:24px;
+  height:1px;
+  margin:24px 0 22px;
+  background:var(--color-line-strong);
+}
+.meta{
+  margin:0 0 8px;
+  font-size:12px;
+  line-height:1.5;
+  letter-spacing:.04em;
+  color:var(--color-ink-soft);
+}
+.say__p{
+  margin:0;
+  font-size:15px;
+  line-height:1.8;
+  letter-spacing:.01em;
+  color:var(--color-ink);
+  text-wrap:pretty;
+  overflow-wrap:break-word;
+}
+.say__list{
+  margin:16px 0 0;
+  padding:0;
+  list-style:none;
+}
+.say__list li{
+  position:relative;
+  padding-left:14px;
+  font-size:15px;
+  line-height:1.8;
+  letter-spacing:.01em;
+  color:var(--color-ink);
+  text-wrap:pretty;
+  overflow-wrap:break-word;
+}
+.say__list li+li{margin-top:10px}
+.say__list li::before{
+  content:"·";
+  position:absolute;
+  left:0;
+  top:0;
+  color:var(--color-ink-soft);
+}
+.say__p--next{margin-top:18px}
+
+/* 自绘 3px 进度轨（不可拖，仅视觉位置） */
+.rail{
+  position:absolute;
+  top:10px;
+  bottom:10px;
+  right:6px;
+  width:3px;
+  background:var(--color-rail);
+}
+.rail__thumb{
+  display:block;
+  width:3px;
+  height:68%;
+  background:var(--color-rail-thumb);
+}
+
+/* 输入区 */
+.composer{
+  flex:0 0 auto;
+  padding:16px var(--pad);
+  border-top:1px solid var(--color-line-strong);
+}
+.field{
+  height:44px;
+  display:flex;
+  align-items:center;
+  padding:0 12px;
+  border:1px solid var(--color-line);
+  border-radius:var(--radius-ctl);
+  background:var(--color-surface);
+}
+.field__ph{
+  font-size:14px;
+  letter-spacing:.02em;
+  color:var(--color-ink-soft);
+}
+.composer__row{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:10px;
+}
+.btn{
+  height:34px;
+  display:inline-flex;
+  align-items:center;
+  padding:0 14px;
+  border-radius:var(--radius-ctl);
+  font-family:var(--font);
+  font-size:14px;
+  letter-spacing:.04em;
+  cursor:default;
+}
+.btn--ghost{
+  border:1px solid var(--color-line-strong);
+  background:var(--color-surface);
+  color:var(--color-accent);
+}
+.btn--solid{
+  border:1px solid var(--color-accent);
+  background:var(--color-accent);
+  color:var(--color-accent-ink);
+}
+.btn:focus-visible,
+.card__ctl:focus-visible{
+  outline:1px solid var(--color-accent);
+  outline-offset:2px;
+}
+
+/* ── 小态 ───────────────────────────────────────────── */
+.sd{
+  flex:1 1 auto;
+  min-height:0;
+  overflow:hidden;
+  padding:16px var(--pad) 18px;
+}
+.sd--mid{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding-bottom:62px;
+}
+.sd__rule{
+  width:24px;
+  height:1px;
+  background:var(--color-line-strong);
+}
+.empty__lead{
+  margin:0;
+  font-size:14px;
+  line-height:1.8;
+  letter-spacing:.01em;
+  color:var(--color-ink);
+  text-wrap:pretty;
+  overflow-wrap:break-word;
+}
+.empty__keys{
+  margin:0;
+  padding:0;
+  list-style:none;
+}
+.empty__keys li{
+  position:relative;
+  padding-left:18px;
+  font-size:12px;
+  line-height:1.75;
+  letter-spacing:.03em;
+  color:var(--color-ink-soft);
+}
+.empty__keys li::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:10px;
+  width:10px;
+  height:1px;
+  background:var(--color-line-strong);
+}
+.sd .breath{margin:10px 0}
+.thinking__label{
+  margin:14px 0 0;
+  font-size:12px;
+  line-height:1.5;
+  letter-spacing:.06em;
+  color:var(--color-ink-soft);
+}
+.sm-rail{
+  position:absolute;
+  left:var(--pad);
+  right:var(--pad);
+  bottom:20px;
+  height:3px;
+  background:var(--color-rail);
+}
+.sm-rail i{
+  display:block;
+  width:38%;
+  height:3px;
+  background:var(--color-rail-thumb);
+}
+.card--sm .stream{position:relative;display:flex;flex-direction:column}
+.err{
+  margin:0;
+  font-size:14px;
+  line-height:1.8;
+  letter-spacing:.01em;
+  color:var(--color-ink);
+  text-wrap:pretty;
+  overflow-wrap:break-word;
+}
+.sd--err{padding-top:18px;align-items:stretch}
+.sd--err .breath{margin:0 0 12px}
+
+/* 兜底：窄窗不崩 */
+@media (max-width:476px){
+  :root{--pad:20px}
+  .stage{padding:32px 16px 64px;gap:56px}
+}
+</style>
+</head>
+<body>
+
+<main class="stage">
+
+  <p class="stage__head">D3 · 原研哉 — 线是唯一的分隔，其余交给空</p>
+
+  <!-- ① 正常态 -->
+  <section class="demo">
+    <p class="demo__label">「① 正常态」420 × 620</p>
+    <article class="card">
+      <header class="card__bar">
+        <span class="card__title" title="DSH鲸鱼娘桌宠插件设计">DSH鲸鱼娘桌宠插件设计</span>
+        <span class="card__dot" aria-hidden="true"></span>
+        <button class="card__ctl" type="button" aria-label="收起">—</button>
+        <button class="card__ctl" type="button" aria-label="关闭">×</button>
+      </header>
+
+      <div class="stream">
+        <div class="stream__body">
+          <p class="mine">这个 loss 曲线为什么会先降后升？是我 batch size 太小吗？</p>
+          <div class="breath" aria-hidden="true"></div>
+          <p class="meta">20:32 · 已看你的屏幕</p>
+          <div class="say">
+            <p class="say__p">先给结论：后升的大概率不是 batch size，而是学习率没有随 warmup 结束回落。三个可以查的证据：</p>
+            <ul class="say__list">
+              <li>你的曲线在第 6 个 epoch 抬升，正好是 warmup 结束的位置</li>
+              <li>抬升前 loss 抖动幅度变大，符合 lr 偏高的典型特征</li>
+              <li>验证集 loss 同步抬头，说明不是过拟合</li>
+            </ul>
+            <p class="say__p say__p--next">下一步：把 warmup_steps 从 500 调到 1500，或直接把峰值学习率降到 3e-4 再跑一次对照。</p>
+          </div>
+        </div>
+        <div class="rail" aria-hidden="true"><i class="rail__thumb"></i></div>
+      </div>
+
+      <footer class="composer">
+        <div class="field"><span class="field__ph">写点问题，我边看屏幕边答</span></div>
+        <div class="composer__row">
+          <button class="btn btn--ghost" type="button">只发屏幕</button>
+          <button class="btn btn--solid" type="button">看屏幕并提问</button>
+        </div>
+      </footer>
+    </article>
+  </section>
+
+  <!-- ② 放大二倍 -->
+  <section class="demo">
+    <p class="demo__label">「② 放大二倍」840 × 1240（200% 缩放实测）</p>
+    <div class="zoom-demo">
+      <article class="card">
+        <header class="card__bar">
+          <span class="card__title" title="DSH鲸鱼娘桌宠插件设计">DSH鲸鱼娘桌宠插件设计</span>
+          <span class="card__dot" aria-hidden="true"></span>
+          <button class="card__ctl" type="button" aria-label="收起">—</button>
+          <button class="card__ctl" type="button" aria-label="关闭">×</button>
+        </header>
+
+        <div class="stream">
+          <div class="stream__body">
+            <p class="mine">这个 loss 曲线为什么会先降后升？是我 batch size 太小吗？</p>
+            <div class="breath" aria-hidden="true"></div>
+            <p class="meta">20:32 · 已看你的屏幕</p>
+            <div class="say">
+              <p class="say__p">先给结论：后升的大概率不是 batch size，而是学习率没有随 warmup 结束回落。三个可以查的证据：</p>
+              <ul class="say__list">
+                <li>你的曲线在第 6 个 epoch 抬升，正好是 warmup 结束的位置</li>
+                <li>抬升前 loss 抖动幅度变大，符合 lr 偏高的典型特征</li>
+                <li>验证集 loss 同步抬头，说明不是过拟合</li>
+              </ul>
+              <p class="say__p say__p--next">下一步：把 warmup_steps 从 500 调到 1500，或直接把峰值学习率降到 3e-4 再跑一次对照。</p>
+            </div>
+          </div>
+          <div class="rail" aria-hidden="true"><i class="rail__thumb"></i></div>
+        </div>
+
+        <footer class="composer">
+          <div class="field"><span class="field__ph">写点问题，我边看屏幕边答</span></div>
+          <div class="composer__row">
+            <button class="btn btn--ghost" type="button">只发屏幕</button>
+            <button class="btn btn--solid" type="button">看屏幕并提问</button>
+          </div>
+        </footer>
+      </article>
+    </div>
+  </section>
+
+  <!-- ③ 三个小态 -->
+  <section class="demo">
+    <p class="demo__label">「③ 三个小态」各 420 × 220</p>
+    <div class="states">
+
+      <!-- 空态 -->
+      <figure class="state">
+        <figcaption class="state__cap">「空态」</figcaption>
+        <article class="card card--sm">
+          <header class="card__bar">
+            <span class="card__title" title="DSH鲸鱼娘桌宠插件设计">DSH鲸鱼娘桌宠插件设计</span>
+            <span class="card__dot" aria-hidden="true"></span>
+            <button class="card__ctl" type="button" aria-label="收起">—</button>
+            <button class="card__ctl" type="button" aria-label="关闭">×</button>
+          </header>
+          <div class="sd">
+            <p class="empty__lead">点我提问。我会自己看你此刻的屏幕，把问题和一帧截图送进 dsh 当前会话。</p>
+            <div class="breath" aria-hidden="true"></div>
+            <ul class="empty__keys">
+              <li>Enter 发送</li>
+              <li>只发屏幕</li>
+              <li>点鲸鱼娘收起</li>
+            </ul>
+          </div>
+        </article>
+      </figure>
+
+      <!-- 思考中 -->
+      <figure class="state">
+        <figcaption class="state__cap">「思考中」</figcaption>
+        <article class="card card--sm">
+          <header class="card__bar">
+            <span class="card__title" title="DSH鲸鱼娘桌宠插件设计">DSH鲸鱼娘桌宠插件设计</span>
+            <span class="card__dot" aria-hidden="true"></span>
+            <button class="card__ctl" type="button" aria-label="收起">—</button>
+            <button class="card__ctl" type="button" aria-label="关闭">×</button>
+          </header>
+          <div class="stream">
+            <div class="sd sd--mid">
+              <div class="sd__rule" aria-hidden="true"></div>
+              <p class="thinking__label">思考中</p>
+            </div>
+            <div class="sm-rail" aria-hidden="true"><i></i></div>
+          </div>
+        </article>
+      </figure>
+
+      <!-- 出错态 -->
+      <figure class="state">
+        <figcaption class="state__cap">「出错态」</figcaption>
+        <article class="card card--sm card--err">
+          <header class="card__bar">
+            <span class="card__title" title="DSH鲸鱼娘桌宠插件设计">DSH鲸鱼娘桌宠插件设计</span>
+            <span class="card__dot" aria-hidden="true"></span>
+            <button class="card__ctl" type="button" aria-label="收起">—</button>
+            <button class="card__ctl" type="button" aria-label="关闭">×</button>
+          </header>
+          <div class="sd sd--mid sd--err">
+            <div class="breath" aria-hidden="true"></div>
+            <p class="err">没连上 dsh：找不到 endpoint.json。确认 dsh 正在运行，或重启卡片。</p>
+          </div>
+        </article>
+      </figure>
+
+    </div>
+  </section>
+
+</main>
+
+</body>
+</html>

@@ -1,0 +1,39 @@
+{
+  "name": "dsh-pet-chat",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Click the desktop pet, type your question: it captures your screen and asks your running dsh session. 点桌宠提问、自动带走当前屏幕的 dsh 插件。",
+  "exports": {
+    ".": "./lib/index.js"
+  },
+  "files": [
+    "lib/index.js",
+    "cordis.patch.yml",
+    "pet-chat.ps1",
+    "pet-chat.cmd",
+    "msgview.cs",
+    "README.md",
+    "DESIGN.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "license": "MIT",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "desktop-pet",
+    "screen-capture",
+    "winforms",
+    "powershell",
+    "deepseek"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ybytlai78-dev/dsh-pet-chat.git"
+  },
+  "homepage": "https://github.com/ybytlai78-dev/dsh-pet-chat#readme"
+}

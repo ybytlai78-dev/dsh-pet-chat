@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DSH 桌宠问答卡 · 视觉稿 D2 · 浅蓝白 / Raycast 浮层节奏</title>
+<style>
+  :root{
+    /* 桌面（页面模拟环境） */
+    --color-desk:            #8f9bb0;
+    --color-desk-label:      #22303f;
+
+    /* 表面三层：只差一档亮度 + 1px 描边，不用阴影 */
+    --color-surface:         #ffffff;
+    --color-surface-bar:     #f5f9ff;
+    --color-surface-foot:    #f8fbff;
+    --color-surface-inset:   #fbfdff;
+
+    /* 线 */
+    --color-edge:            #a8bfdd;
+    --color-line:            #d9e4f3;
+    --color-line-strong:     #c3d4ea;
+
+    /* 字 */
+    --color-text:            #1c283a;
+    --color-text-soft:       #5e7089;
+
+    /* 强调：全卡唯一实心高饱和块 */
+    --color-accent:          #2560f0;
+    --color-accent-press:    #1e53d8;
+    --color-on-accent:       #ffffff;
+
+    /* 提问气泡 */
+    --color-user-bubble:     #e8f0fe;
+    --color-user-text:       #17356f;
+
+    /* 状态 / 进度 / 骨架 / 错误 */
+    --color-online:          #2f9e6a;
+    --color-warn:            #c0503c;
+    --color-track:           #e4edfa;
+    --color-thumb:           #9dbef0;
+    --color-skeleton:        #e6eef9;
+    --color-error-bg:        #fdf1ee;
+    --color-error-line:      #efd3cb;
+    --color-error-text:      #a8402c;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; }
+
+  body{
+    background:var(--color-desk);
+    padding:44px 24px 72px;
+    font-family:"Microsoft YaHei UI","Microsoft YaHei","PingFang SC",sans-serif;
+    color:var(--color-text);
+    font-size:14px;
+  }
+
+  .board{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:56px;
+  }
+
+  .spec{
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+  }
+  .spec__label{
+    margin:0 0 12px;
+    font-size:12px;
+    font-weight:600;
+    line-height:1.4;
+    letter-spacing:.04em;
+    color:var(--color-desk-label);
+  }
+
+  /* ── 卡片本体 ─────────────────────────────────────────── */
+  .card{
+    align-self:center;
+    width:420px;
+    height:620px;
+    display:flex;
+    flex-direction:column;
+    background:var(--color-surface);
+    border:1px solid var(--color-edge);
+    border-radius:12px;
+    overflow:hidden;
+  }
+
+  /* 顶栏：Raycast 式紧凑条 */
+  .bar{
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    height:44px;
+    padding:0 10px 0 16px;
+    background:var(--color-surface-bar);
+    border-bottom:1px solid var(--color-line);
+  }
+  .bar__title{
+    margin:0;
+    flex:1 1 auto;
+    min-width:0;
+    font-size:14px;
+    font-weight:600;
+    line-height:1.4;
+    letter-spacing:.01em;
+    color:var(--color-text);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .bar__tools{
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    gap:2px;
+  }
+  .dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:var(--color-online);
+    margin-right:6px;
+  }
+  .ico{
+    width:24px;
+    height:24px;
+    padding:0;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font:inherit;
+    font-size:14px;
+    line-height:1;
+    color:var(--color-text-soft);
+    background:transparent;
+    border:1px solid transparent;
+    border-radius:6px;
+    cursor:default;
+  }
+
+  /* ── 消息流（滚动容器 + 自绘 3px 轨）─────────────────── */
+  .stream{
+    flex:1 1 auto;
+    min-height:0;
+    position:relative;
+  }
+  .stream__view{
+    position:absolute;
+    inset:0;
+    padding:14px 20px 16px 16px;
+    overflow-y:auto;
+    scrollbar-width:none;
+  }
+  .stream__view::-webkit-scrollbar{ display:none; }
+
+  /* 卡被拉宽到 1080 时限制行长，420 基准下不产生任何偏移 */
+  .stream__view > .qa,
+  .stream__view > .ans{
+    max-width:680px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+
+  .rail{
+    position:absolute;
+    top:10px;
+    bottom:10px;
+    right:5px;
+    width:3px;
+    border-radius:2px;
+    background:var(--color-track);
+    pointer-events:none;
+  }
+  /* 轨：位置/粗细/颜色固定，不可拖。滑块长度 = 视口行数 / 总行数
+     （真机由 EM_GETLINECOUNT / EM_GETFIRSTVISIBLELINE 驱动，此稿取 62% 示意） */
+  .rail__thumb{
+    position:absolute;
+    top:0;
+    left:0;
+    width:3px;
+    height:62%;
+    border-radius:2px;
+    background:var(--color-thumb);
+  }
+
+  .qa{ display:flex; justify-content:flex-end; }
+  .qa__mine{
+    margin:0;
+    max-width:82%;
+    padding:8px 11px;
+    border-radius:10px;
+    background:var(--color-user-bubble);
+    color:var(--color-user-text);
+    font-size:14px;
+    line-height:1.55;
+    text-wrap:pretty;
+  }
+
+  .ans{ margin-top:12px; }
+  .ans__meta{
+    margin:0 0 7px;
+    font-size:12px;
+    line-height:1.4;
+    letter-spacing:.01em;
+    color:var(--color-text-soft);
+  }
+  .ans__p{
+    margin:0;
+    font-size:14px;
+    line-height:1.6;
+    color:var(--color-text);
+    text-wrap:pretty;
+  }
+  .ans__li{
+    margin:5px 0 0;
+    font-size:14px;
+    line-height:1.6;
+    color:var(--color-text);
+    text-wrap:pretty;
+  }
+  .ans__p--next{ margin-top:10px; }
+  .ans__mark{ color:var(--color-text-soft); }
+
+  /* ── 底栏（按钮永远贴底）──────────────────────────────── */
+  .foot{
+    flex:0 0 auto;
+    padding:12px 14px 14px;
+    background:var(--color-surface-foot);
+    border-top:1px solid var(--color-line);
+  }
+  .field{
+    display:flex;
+    align-items:center;
+    height:42px;
+    padding:0 12px;
+    background:var(--color-surface-inset);
+    border:1px solid var(--color-line-strong);
+    border-radius:8px;
+  }
+  .field__ph{
+    font-size:14px;
+    line-height:1.4;
+    color:var(--color-text-soft);
+  }
+  .acts{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    margin-top:9px;
+  }
+  .btn{
+    font:inherit;
+    font-size:14px;
+    font-weight:600;
+    line-height:1;
+    height:32px;
+    padding:0 14px;
+    border:1px solid transparent;
+    border-radius:7px;
+    cursor:default;
+  }
+  .btn--ghost{
+    background:var(--color-surface);
+    color:var(--color-user-text);
+    border-color:var(--color-line-strong);
+  }
+  .btn--primary{
+    background:var(--color-accent);
+    color:var(--color-on-accent);
+  }
+
+  /* ── 小态 420×220 ─────────────────────────────────────── */
+  .minis{
+    display:flex;
+    flex-wrap:wrap;
+    gap:18px;
+  }
+  .mini-slot{ display:flex; flex-direction:column; gap:10px; }
+  .mini-slot__label{
+    margin:0;
+    font-size:12px;
+    font-weight:600;
+    line-height:1.4;
+    letter-spacing:.04em;
+    color:var(--color-desk-label);
+  }
+
+  .card--mini{ height:220px; }
+  .card--mini .bar{
+    height:40px;
+    padding:0 8px 0 14px;
+  }
+  .mini-body{
+    flex:1 1 auto;
+    min-height:0;
+    overflow:hidden;
+    padding:14px 16px 0;
+  }
+  .mini-lede{
+    margin:0;
+    font-size:14px;
+    line-height:1.55;
+    color:var(--color-text);
+    text-wrap:pretty;
+  }
+  .mini-uses{
+    margin:9px 0 0;
+    padding:0;
+    list-style:none;
+  }
+  .mini-uses li{
+    font-size:12px;
+    line-height:1.5;
+    color:var(--color-text-soft);
+  }
+  .mini-foot{
+    flex:0 0 auto;
+    padding:0 14px 12px;
+  }
+  .field--mini{
+    height:32px;
+    background:var(--color-surface-bar);
+  }
+
+  .qa__mine--mini{ max-width:90%; padding:7px 10px; }
+  .mini-skel{ margin-top:10px; }
+  .mini-skel i{
+    display:block;
+    height:9px;
+    border-radius:3px;
+    background:var(--color-skeleton);
+  }
+  .mini-skel i:first-child{ width:88%; }
+  .mini-skel i:last-child{ width:62%; margin-top:8px; }
+
+  .mini-err{
+    margin-top:2px;
+    padding:10px 12px;
+    background:var(--color-error-bg);
+    border:1px solid var(--color-error-line);
+    border-radius:8px;
+  }
+  .mini-err p{
+    margin:0;
+    font-size:14px;
+    line-height:1.6;
+    color:var(--color-error-text);
+    text-wrap:pretty;
+  }
+
+  /* ② 200% 缩放复核：与正常态内容完全一致 */
+  .card--zoom{ zoom:2; }
+</style>
+</head>
+<body>
+<main class="board">
+
+  <!-- ① 正常态 -->
+  <section class="spec">
+    <p class="spec__label">① 正常态 · 420 × 620</p>
+    <article class="card">
+      <header class="bar">
+        <h1 class="bar__title">DSH鲸鱼娘桌宠插件设计</h1>
+        <div class="bar__tools">
+          <span class="dot"></span>
+          <span class="ico">—</span>
+          <span class="ico">×</span>
+        </div>
+      </header>
+
+      <div class="stream">
+        <div class="stream__view">
+          <div class="qa">
+            <p class="qa__mine">这个 loss 曲线为什么会先降后升？是我 batch size 太小吗？</p>
+          </div>
+
+          <div class="ans">
+            <p class="ans__meta">20:32 · 已看你的屏幕</p>
+            <p class="ans__p">先给结论：后升的大概率不是 batch size，而是学习率没有随 warmup 结束回落。三个可以查的证据：</p>
+            <p class="ans__li"><span class="ans__mark">·</span> 你的曲线在第 6 个 epoch 抬升，正好是 warmup 结束的位置</p>
+            <p class="ans__li"><span class="ans__mark">·</span> 抬升前 loss 抖动幅度变大，符合 lr 偏高的典型特征</p>
+            <p class="ans__li"><span class="ans__mark">·</span> 验证集 loss 同步抬头，说明不是过拟合</p>
+            <p class="ans__p ans__p--next">下一步：把 warmup_steps 从 500 调到 1500，或直接把峰值学习率降到 3e-4 再跑一次对照。</p>
+          </div>
+        </div>
+        <div class="rail"><i class="rail__thumb"></i></div>
+      </div>
+
+      <footer class="foot">
+        <div class="field"><span class="field__ph">写点问题，我边看屏幕边答</span></div>
+        <div class="acts">
+          <span class="btn btn--ghost">只发屏幕</span>
+          <span class="btn btn--primary">看屏幕并提问</span>
+        </div>
+      </footer>
+    </article>
+  </section>
+
+  <!-- ② 2 倍放大 -->
+  <section class="spec">
+    <p class="spec__label">② 同尺寸放大 2 倍（模拟 200% 缩放，逐像素复核描边 / 圆角 / 字号）</p>
+    <article class="card card--zoom">
+      <header class="bar">
+        <h1 class="bar__title">DSH鲸鱼娘桌宠插件设计</h1>
+        <div class="bar__tools">
+          <span class="dot"></span>
+          <span class="ico">—</span>
+          <span class="ico">×</span>
+        </div>
+      </header>
+
+      <div class="stream">
+        <div class="stream__view">
+          <div class="qa">
+            <p class="qa__mine">这个 loss 曲线为什么会先降后升？是我 batch size 太小吗？</p>
+          </div>
+
+          <div class="ans">
+            <p class="ans__meta">20:32 · 已看你的屏幕</p>
+            <p class="ans__p">先给结论：后升的大概率不是 batch size，而是学习率没有随 warmup 结束回落。三个可以查的证据：</p>
+            <p class="ans__li"><span class="ans__mark">·</span> 你的曲线在第 6 个 epoch 抬升，正好是 warmup 结束的位置</p>
+            <p class="ans__li"><span class="ans__mark">·</span> 抬升前 loss 抖动幅度变大，符合 lr 偏高的典型特征</p>
+            <p class="ans__li"><span class="ans__mark">·</span> 验证集 loss 同步抬头，说明不是过拟合</p>
+            <p class="ans__p ans__p--next">下一步：把 warmup_steps 从 500 调到 1500，或直接把峰值学习率降到 3e-4 再跑一次对照。</p>
+          </div>
+        </div>
+        <div class="rail"><i class="rail__thumb"></i></div>
+      </div>
+
+      <footer class="foot">
+        <div class="field"><span class="field__ph">写点问题，我边看屏幕边答</span></div>
+        <div class="acts">
+          <span class="btn btn--ghost">只发屏幕</span>
+          <span class="btn btn--primary">看屏幕并提问</span>
+        </div>
+      </footer>
+    </article>
+  </section>
+
+  <!-- ③ 三态小卡 -->
+  <section class="spec">
+    <p class="spec__label">③ 小态 · 各 420 × 220（空态 / 思考中 / 出错态）</p>
+    <div class="minis">
+
+      <div class="mini-slot">
+        <article class="card card--mini">
+          <header class="bar">
+            <h1 class="bar__title">DSH鲸鱼娘桌宠插件设计</h1>
+            <div class="bar__tools">
+              <span class="dot"></span>
+              <span class="ico">—</span>
+              <span class="ico">×</span>
+            </div>
+          </header>
+          <div class="mini-body">
+            <p class="mini-lede">点我提问。我会自己看你此刻的屏幕，把问题和一帧截图送进 dsh 当前会话。</p>
+            <ul class="mini-uses">
+              <li>Enter 发送</li>
+              <li>只发屏幕</li>
+              <li>点鲸鱼娘收起</li>
+            </ul>
+          </div>
+          <div class="mini-foot">
+            <div class="field field--mini"><span class="field__ph">写点问题，我边看屏幕边答</span></div>
+          </div>
+        </article>
+        <p class="mini-slot__label">空态</p>
+      </div>
+
+      <div class="mini-slot">
+        <article class="card card--mini">
+          <header class="bar">
+            <h1 class="bar__title">DSH鲸鱼娘桌宠插件设计</h1>
+            <div class="bar__tools">
+              <span class="dot" style="background:var(--color-accent)"></span>
+              <span class="ico">—</span>
+              <span class="ico">×</span>
+            </div>
+          </header>
+          <div class="mini-body">
+            <div class="qa">
+              <p class="qa__mine qa__mine--mini">这个 loss 曲线为什么会先降后升？是我 batch size 太小吗？</p>
+            </div>
+            <div class="mini-skel"><i></i><i></i></div>
+          </div>
+          <div class="mini-foot">
+            <div class="field field--mini"><span class="field__ph">写点问题，我边看屏幕边答</span></div>
+          </div>
+        </article>
+        <p class="mini-slot__label">思考中</p>
+      </div>
+
+      <div class="mini-slot">
+        <article class="card card--mini">
+          <header class="bar">
+            <h1 class="bar__title">DSH鲸鱼娘桌宠插件设计</h1>
+            <div class="bar__tools">
+              <span class="dot" style="background:var(--color-warn)"></span>
+              <span class="ico">—</span>
+              <span class="ico">×</span>
+            </div>
+          </header>
+          <div class="mini-body">
+            <div class="mini-err">
+              <p>没连上 dsh：找不到 endpoint.json。确认 dsh 正在运行，或重启卡片。</p>
+            </div>
+          </div>
+          <div class="mini-foot">
+            <div class="field field--mini"><span class="field__ph">写点问题，我边看屏幕边答</span></div>
+          </div>
+        </article>
+        <p class="mini-slot__label">出错态</p>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+</body>
+</html>
