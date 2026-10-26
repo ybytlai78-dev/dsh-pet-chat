@@ -1,6 +1,6 @@
 {
   "name": "dsh-pet-chat",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "Click the desktop pet, type your question: it captures your screen and asks your running dsh session. 点桌宠提问、自动带走当前屏幕的 dsh 插件。",
   "exports": {

@@ -115,7 +115,8 @@ const auth = { 'x-pet-token': endpoint.token }
 console.log('endpoint / 鉴权')
 check('endpoint.json 写对了端口', endpoint.base === base, endpoint.base)
 check('endpoint.json 带 token', /^[0-9a-f-]{36}$/.test(endpoint.token ?? ''))
-check('三条 effect 都装了', calls.effects.length === 3, JSON.stringify(calls.effects))
+const wantedEffects = ['dsh-pet-chat: endpoint', 'dsh-pet-chat: routes', 'dsh-pet-chat: session bus', 'dsh-pet-chat: card autostart']
+check('四条 effect 都装了（含自启卡片）', wantedEffects.every((n) => calls.effects.includes(n)), JSON.stringify(calls.effects))
 
 check('无 token → 401', (await fetch(`${base}/api/pet-chat/state`)).status === 401)
 check('错 token → 401', (await fetch(`${base}/api/pet-chat/state`, { headers: { 'x-pet-token': 'nope' } })).status === 401)

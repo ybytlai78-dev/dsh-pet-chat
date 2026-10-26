@@ -30,15 +30,18 @@ Windows · PowerShell 5.1 · 需要 dsh 桌面端与官方桌宠 `dsh-tauri-pet`
 ## 安装
 
 ```powershell
-# 1) 装进 dsh 的 profile（web 是你的 profile 名），然后重启 dsh
+# 装进 dsh 的 profile（web 是你的 profile 名），然后重启 dsh
 dsh plugin --profile web add "<本目录>"
-
-# 2) 启动卡片进程（常驻托盘，平时不显示窗口）
-.\pet-chat.cmd
 ```
 
+就这样，没有第二步：**桌面端启动时会自己把卡片进程拉起来**（`cordis.patch.yml` 里的 `autoStartCard: true`）。
+卡片平时完全隐藏（只在托盘留一个图标），屏幕上你只会看到官方桌宠那只鲸鱼娘；重启电脑也不用再动它。
+
+不想要自启：把 `cordis.patch.yml` 里 `autoStartCard` 改成 `false`，之后用 `pet-chat.cmd` 手动起。
+卡片脚本自带单实例锁，重复拉起会立刻自退，所以手动和自启混着用也不会出现两张卡。
+
 插件加载时会把 `{base, token, pid}` 写到 `%USERPROFILE%\.dsh\pet-chat\endpoint.json`，卡片靠它找到 dsh，每个请求带 `x-pet-token`。
-所以顺序是：**先起 dsh，再起卡片**。
+卡片每 800ms 重读这个文件，所以 **dsh 后起也没关系**，起来后卡片会自己接上（token 换了也会自动重试一次）。
 
 ## 使用
 
@@ -84,7 +87,8 @@ node verify\selfcheck.mjs        # 宿主四条路由的桩测试（39 条断言
 | 现象 | 原因 | 处理 |
 | --- | --- | --- |
 | 「未连接 dsh（缺 endpoint.json）」 | dsh 没起 / 插件没装 / 端点文件是上次的 | 先起 dsh；`dsh plugin --profile web list` 确认插件在；仍是旧的就连 dsh 一起重启 |
-| 点鲸鱼娘没反应 | 卡片进程没跑，或点到宠物窗的透明留白（宠物只占窗内约 62%×82%） | 托盘右键「显示聊天卡」；点鲸鱼娘本体而不是边角 |
+| 重启后点鲸鱼娘没反应 | 卡片进程没起来（旧版本需要手动双击 `pet-chat.cmd`） | 新版由桌面端自启，确认插件是 0.2 之后；看 `%USERPROFILE%\.dsh\pet-chat\host.log` 有没有 `spawn ok`，`card.log` 有没有 `run: 进入消息循环`；托盘右键也能「显示聊天卡」 |
+| 点鲸鱼娘没反应 | 点到宠物窗的透明留白（宠物只占窗内约 62%×82%） | 点鲸鱼娘本体而不是边角 |
 | 输入后没回音 | 会话还不是活体（刚新建），或 dsh 正在跑别的回合 | 新建会话的第一次提问会自动认领；回显靠 800ms 轮询 |
 | 点了发送没反应 | 见 `card.log` | 有 `send:` 说明送出、看 `view:` 是否正常；两行都缺就是入口没触发 |
 

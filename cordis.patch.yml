@@ -1,3 +1,6 @@
 - insert:
     - id: dsh-pet-chat
       name: dsh-pet-chat
+      config:
+        # 桌面端启动时自动拉起悬浮窗（点鲸鱼娘就出卡片）；设 false 则改回手动双击 pet-chat.cmd。
+        autoStartCard: true

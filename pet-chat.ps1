@@ -38,6 +38,8 @@ public static class DpiNative {
 [void][DpiNative]::SetProcessDPIAware()
 # 浅色主题下不需要强制深色系统控件；原生滚动条已在 RichTextBox 上关掉，故不再调 uxtheme。
 [System.Windows.Forms.Application]::EnableVisualStyles()
+$ts = Get-Date -Format 'HH:mm:ss'
+try { Add-Content -LiteralPath (Join-Path $env:USERPROFILE '.dsh\pet-chatoot.log') -Value "$ts  boot: mutex+styles ok  pid=$PID" -Encoding UTF8 } catch { }
 
 # WinForms 类型（NativeWindow / Message）不在默认引用集里，必须显式引用这两个程序集。
 Add-Type -ReferencedAssemblies 'System.Windows.Forms', 'System.Drawing' @'
@@ -685,6 +687,7 @@ function Show-Card {
   $form.MinimumSize = New-Object Drawing.Size((S 360), (S 420))
   $form.Bounds = New-Object Drawing.Rectangle($x, $y, $w, $h)
   Layout
+  Write-CardLog ("show: k=$($script:K) saved=$($g.w)x$($g.h) bounds=$w" + "x$h@" + "$x,$y")
   $form.Show()
   $form.TopMost = $true
   [void]$form.Activate()
@@ -982,8 +985,21 @@ function Refresh-State {
   if ($script:SessionId) { $path = $path + '?sessionId=' + [Uri]::EscapeDataString($script:SessionId) }
   $state = Invoke-Api 'GET' $path $null
   if ($null -eq $state -or -not $state.ok) {
-    Set-Status 'bad' '未连接（endpoint.json 可能已过期，重启 dsh）'
-    return
+    # dsh 重启会换 token：先重读一次 endpoint.json，变了就用新 token 再试一遍。
+    # （不然开机自启的卡片会一直拿着上次的 token 撞 401，表现就是"点鲸鱼娘没反应"。）
+    $before = [string]$script:Token
+    $reread = Read-Endpoint
+    if ($reread -and [string]$script:Token -ne $before) {
+      Write-CardLog 'endpoint: token 变了，按新 token 重试一次'
+      if (-not $script:Base) { return }
+      $path2 = '/api/pet-chat/state'
+      if ($script:SessionId) { $path2 = $path2 + '?sessionId=' + [Uri]::EscapeDataString($script:SessionId) }
+      $state = Invoke-Api 'GET' $path2 $null
+    }
+    if ($null -eq $state -or -not $state.ok) {
+      Set-Status 'bad' '未连接（endpoint.json 可能已过期，重启 dsh）'
+      return
+    }
   }
 
   if (-not $script:SessionId -and $state.sessionId) { $script:SessionId = [string]$state.sessionId }
@@ -1162,4 +1178,11 @@ if ($Show) { Show-Card }
 if (-not $Demo) { $timer.Start() }
 $watcher.Start()
 
-[Windows.Forms.Application]::Run($ctx)
+Write-CardLog 'run: 进入消息循环'
+try {
+  [Windows.Forms.Application]::Run($ctx)
+  Write-CardLog 'run: 消息循环退出（正常关闭）'
+} catch {
+  Write-CardLog ('run: 崩了 -> ' + $_.Exception.Message)
+  throw
+}

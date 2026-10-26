@@ -404,3 +404,33 @@ card.json   = {"x":1212,"y":222,"w":1080,"h":1260}
 `view:` 那行是排版自述（每块的种类、行数、字数、尺寸），气泡"有框没字"这类问题一眼定位在折行还是绘制。
 
 事件处理器一律包 `try/catch → Write-CardLog`：WinForms 的 `Add_Click`/`Add_KeyDown` 里抛出的异常在隐藏窗口里是**看不见**的，不落日志就等于随机失灵。
+
+## 10.11 开机自带：卡片随桌面端一起起来（2026-10-26）
+
+用户的诉求：**只要启用了桌宠，点它就该有聊天卡**，不该记着去双击 `pet-chat.cmd`。
+重启后点鲸鱼娘没反应，根因很朴素——卡片是独立进程，重启后没人把它拉起来（宿主插件照常在跑、路由都在、`endpoint.json` 也是新的，只是没有进程去画那张卡）。
+
+做法：宿主半边在 `apply()` 里多一段 `ctx.effect`，桌面端启动（或插件热重载）时拉起卡片；`dispose` 时收尸。
+
+```js
+spawn('cmd.exe', ['/c', 'start', '', '/b', 'powershell.exe', '-NoProfile',
+  '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', CARD_SCRIPT],
+  { cwd: PACKAGE_DIR, stdio: 'ignore', windowsHide: true })
+```
+
+三个真踩过的坑：
+
+| 坑 | 现象 | 结论 |
+| --- | --- | --- |
+| 直接 `spawn('powershell.exe', ...)` | 宿主里 spawn 成功、拿到 pid，但子进程**立刻退 0**，卡片没出现 | 没有控制台时这个样子；`start` 起的独立进程才稳 |
+| `windowsHide: true` + `start`（不加 `/b`） | 同样秒退 | `windowsHide` 的 `CREATE_NO_WINDOW` 会把 `start` 拉起的整棵树一起掐掉；加 `/b` 让它不开新窗口、又活得下去 |
+| 靠 pid 收尸 | `start` 起的进程拿不到真实 pid | `dispose` 里按命令行匹配 `pet-chat\.ps1` 精确 `Stop-Process` |
+
+配套改动：
+
+- `cordis.patch.yml` 增加 `config.autoStartCard`（缺省 true）；设 `false` 就回到手动双击。
+- 卡片启动到消息循环、每次展开、token 换新都写审计行（`card.log` 与 `host.log`），出问题不看代码也能定位。
+- **token 轮换**：`TOKEN = randomUUID()` 是模块级常量，插件每次热重载都会换新 token 并重写 `endpoint.json`；
+  正在跑的卡片手里是旧 token → `/state` 401。`Refresh-State` 现在遇到失败会重读一次 `endpoint.json`，
+  token 变了就用新的重试一次（日志 `endpoint: token 变了，按新 token 重试一次`），所以热重载不会把卡片打死。
+- 登录即自启的另一种做法（启动文件夹快捷方式）**没有采用**：桌宠本身是桌面端的一部分，桌面端不在时卡片只会显示「未连接」，多一个开机项是噪音。
